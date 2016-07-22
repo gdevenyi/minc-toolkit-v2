@@ -22,6 +22,7 @@ BuildRequires:  bzip2
 BuildRequires:  gcc-c++
 BuildRequires:  git
 BuildRequires:  mesa-libGL-devel
+BuildRequires:  mesa-libGLU-devel
 
 Prefix:         /opt/minc/%{version}
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build

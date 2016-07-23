@@ -64,6 +64,7 @@ macro(build_itkv4 install_prefix staging_prefix minc_dir hdf_bin_dir hdf_include
     BINARY_DIR ITKv4-build
     CMAKE_GENERATOR ${CMAKE_GEN}
     CMAKE_ARGS
+        -DCMAKE_RULE_MESSAGES:BOOL=OFF
         -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
         -DBUILD_SHARED_LIBS:BOOL=${ITK_SHARED_LIBRARY}
         -DCMAKE_INSTALL_PREFIX:PATH=${install_prefix}

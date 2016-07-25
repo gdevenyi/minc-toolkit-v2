@@ -1,7 +1,7 @@
 project(minc-toolkit-v2)
 enable_language(C)
 enable_language(CXX)
-
+set_property(GLOBAL PROPERTY RULE_MESSAGES OFF)
 cmake_minimum_required(VERSION 3.1)
 
 IF(COMMAND CMAKE_POLICY)

@@ -13,6 +13,7 @@ License: GPL-2.0
 Provides:       minc-toolkit-v2 = %{version}
 
 BuildRequires:  cmake
+BuildRequires: ccache
 BuildRequires:  bison
 BuildRequires:  flex
 BuildRequires:  libXi-devel

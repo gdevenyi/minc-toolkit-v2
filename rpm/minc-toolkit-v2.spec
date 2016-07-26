@@ -60,12 +60,12 @@ cmake .. \
     -DCMAKE_RULE_MESSAGES:BOOL=OFF \
     -DMT_BUILD_QUIET:BOOL=ON
     
-make
+make %{?_smp_mflags}
 
 
 %install
 cd build
-make install DESTDIR=%{buildroot}
+make install DESTDIR=%{buildroot} %{?_smp_mflags}
 
 %clean
 rm -rf $RPM_BUILD_ROOT

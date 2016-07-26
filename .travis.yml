@@ -2,6 +2,10 @@ sudo: required
 services:
   - docker
 
+language: c
+
+cache: ccache
+
 env:
     matrix:
       - OS=centos DIST=6 PACK=rpm
@@ -20,7 +24,7 @@ env:
       - OS=debian DIST=sid PACK=deb
 
 script:
-  - git clone --branch develop-build https://github.com/gdevenyi/build.git
+  - git clone --branch ccache https://github.com/gdevenyi/build.git
   - ./build/pack/travis.sh
 
 notifications:

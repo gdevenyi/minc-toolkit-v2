@@ -4,6 +4,12 @@ enable_language(CXX)
 set_property(GLOBAL PROPERTY RULE_MESSAGES OFF)
 cmake_minimum_required(VERSION 3.1)
 
+find_program(CCACHE_FOUND ccache)
+if(CCACHE_FOUND)
+set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
+endif(CCACHE_FOUND)
+
 IF(COMMAND CMAKE_POLICY)
   IF(POLICY CMP0026)
       CMAKE_POLICY(SET CMP0026 OLD)

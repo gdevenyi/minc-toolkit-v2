@@ -12,7 +12,12 @@ Packager: Vladimir Fonov <vladimir.fonov@gmail.com>
 License: GPL-2.0
 Provides:       minc-toolkit-v2 = %{version}
 
+%if 0%{?el6} || 0%{?el7}
+BuildRequires: cmake3
+%else
 BuildRequires:  cmake
+%endif
+
 BuildRequires: ccache
 BuildRequires:  bison
 BuildRequires:  flex

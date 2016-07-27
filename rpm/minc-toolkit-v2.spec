@@ -29,6 +29,7 @@ Prefix:         /opt/minc/%{version}
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 %define _prefix /opt/minc/%{version}
+%define  debug_package %{nil}
 
 %description
 This is to be filled...

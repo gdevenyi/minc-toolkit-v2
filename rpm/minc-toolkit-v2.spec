@@ -50,6 +50,24 @@ export CXXFLAGS="%{optflags}"
 
 mkdir -p build 
 cd build 
+%if 0%{?el6} || 0%{?el7}
+cmake3 .. \
+    -DCMAKE_BUILD_TYPE:STRING=Release \
+    -DCMAKE_INSTALL_PREFIX:PATH=%{_prefix} \
+    -DMT_BUILD_ABC:BOOL=OFF \
+    -DMT_BUILD_ANTS:BOOL=OFF \
+    -DMT_BUILD_C3D:BOOL=OFF \
+    -DMT_BUILD_ELASTIX:BOOL=OFF \
+    -DMT_BUILD_IM:BOOL=OFF \
+    -DMT_BUILD_ITK_TOOLS:BOOL=ON \
+    -DMT_BUILD_LITE:BOOL=OFF \
+    -DMT_BUILD_SHARED_LIBS:BOOL=ON \
+    -DMT_BUILD_VISUAL_TOOLS:BOOL=ON \
+    -DMT_USE_OPENMP:BOOL=ON \
+    -DUSE_SYSTEM_GLUT:BOOL=OFF \
+    -DCMAKE_RULE_MESSAGES:BOOL=OFF \
+    -DMT_BUILD_QUIET:BOOL=ON
+%else
 cmake .. \
     -DCMAKE_BUILD_TYPE:STRING=Release \
     -DCMAKE_INSTALL_PREFIX:PATH=%{_prefix} \
@@ -66,7 +84,8 @@ cmake .. \
     -DUSE_SYSTEM_GLUT:BOOL=OFF \
     -DCMAKE_RULE_MESSAGES:BOOL=OFF \
     -DMT_BUILD_QUIET:BOOL=ON
-    
+%endif
+
 make %{?_smp_mflags}
 
 

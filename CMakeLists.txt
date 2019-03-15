@@ -637,6 +637,11 @@ INCLUDE(DebianPackageAddons)
 
 # setup additional variables for making RPM package
 INCLUDE(RPMPackageAddons)
+SET(CPACK_RPM_SPEC_MORE_DEFINE "
+%if 0%{?scl:1}
+%define __strip %{_bindir}/strip
+%endif
+")
 
 
 # according to http://www.cmake.org/pipermail/cmake/2011-November/047137.html it's better to put this in the end

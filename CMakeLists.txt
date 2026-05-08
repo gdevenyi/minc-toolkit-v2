@@ -39,10 +39,20 @@ ENDIF(COMMAND CMAKE_POLICY)
 
 
 
-SET(MINC_TOOLKIT_PACKAGE_VERSION_MAJOR 1)
-SET(MINC_TOOLKIT_PACKAGE_VERSION_MINOR 9)
-SET(MINC_TOOLKIT_PACKAGE_VERSION_PATCH 18)
-SET(MINC_TOOLKIT_RELEASE_DATE "20260305")
+# Version components are overridable from the cmake CLI so CI can set them
+# from a tag without touching this file.
+IF(NOT DEFINED MINC_TOOLKIT_PACKAGE_VERSION_MAJOR)
+  SET(MINC_TOOLKIT_PACKAGE_VERSION_MAJOR 1)
+ENDIF()
+IF(NOT DEFINED MINC_TOOLKIT_PACKAGE_VERSION_MINOR)
+  SET(MINC_TOOLKIT_PACKAGE_VERSION_MINOR 9)
+ENDIF()
+IF(NOT DEFINED MINC_TOOLKIT_PACKAGE_VERSION_PATCH)
+  SET(MINC_TOOLKIT_PACKAGE_VERSION_PATCH 18)
+ENDIF()
+IF(NOT DEFINED MINC_TOOLKIT_RELEASE_DATE)
+  SET(MINC_TOOLKIT_RELEASE_DATE "20260305")
+ENDIF()
 
 SET(MINC_TOOLKIT_VERSION_FULL "${MINC_TOOLKIT_PACKAGE_VERSION_MAJOR}.${MINC_TOOLKIT_PACKAGE_VERSION_MINOR}.${MINC_TOOLKIT_PACKAGE_VERSION_PATCH}-${MINC_TOOLKIT_RELEASE_DATE}")
 
@@ -701,6 +711,22 @@ INCLUDE(DebianPackageAddons)
 
 # setup additional variables for making RPM package
 INCLUDE(RPMPackageAddons)
+
+# Source tarball generation: `cpack --config CPackSourceConfig.cmake -G TGZ`
+SET(CPACK_SOURCE_GENERATOR "TGZ")
+SET(CPACK_SOURCE_PACKAGE_FILE_NAME "minc-toolkit-v2-${MINC_TOOLKIT_VERSION_FULL}-src")
+SET(CPACK_SOURCE_IGNORE_FILES
+    "/\\\\.git/"
+    "/\\\\.github/"
+    "/minc-build.*/"
+    "/build/"
+    "\\\\.gitignore$"
+    "\\\\.tar\\\\.gz$"
+    "\\\\.deb$"
+    "\\\\.rpm$"
+    "\\\\.pkg$"
+    "/\\\\.vscode/"
+    "/\\\\.idea/")
 
 
 # according to http://www.cmake.org/pipermail/cmake/2011-November/047137.html it's better to put this in the end

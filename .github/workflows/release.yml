@@ -1,0 +1,310 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g. 1.9.18)'
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  meta:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      major: ${{ steps.v.outputs.major }}
+      minor: ${{ steps.v.outputs.minor }}
+      patch: ${{ steps.v.outputs.patch }}
+    steps:
+      - id: v
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="${{ inputs.version }}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          IFS=. read -r MAJOR MINOR PATCH <<<"$VERSION"
+          echo "major=$MAJOR" >> "$GITHUB_OUTPUT"
+          echo "minor=$MINOR" >> "$GITHUB_OUTPUT"
+          echo "patch=$PATCH" >> "$GITHUB_OUTPUT"
+
+  source-tarball:
+    needs: meta
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Install cmake
+        run: sudo apt-get update && sudo apt-get install -y cmake
+      - name: Configure + package source
+        run: |
+          cmake -B build \
+            -DMINC_TOOLKIT_PACKAGE_VERSION_MAJOR=${{ needs.meta.outputs.major }} \
+            -DMINC_TOOLKIT_PACKAGE_VERSION_MINOR=${{ needs.meta.outputs.minor }} \
+            -DMINC_TOOLKIT_PACKAGE_VERSION_PATCH=${{ needs.meta.outputs.patch }} \
+            -DCPACK_PACKAGE_VERSION=${{ needs.meta.outputs.version }} \
+            .
+          cd build && cpack --config CPackSourceConfig.cmake -G TGZ
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source
+          path: build/*-src.tar.gz
+
+  deb:
+    needs: meta
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { distro: ubuntu, codename: jammy,    image: 'ubuntu:22.04', variant: minimal }
+          - { distro: ubuntu, codename: jammy,    image: 'ubuntu:22.04', variant: full }
+          - { distro: ubuntu, codename: noble,    image: 'ubuntu:24.04', variant: minimal }
+          - { distro: ubuntu, codename: noble,    image: 'ubuntu:24.04', variant: full }
+          - { distro: debian, codename: bookworm, image: 'debian:12',    variant: minimal }
+          - { distro: debian, codename: bookworm, image: 'debian:12',    variant: full }
+    container: ${{ matrix.image }}
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      CCACHE_DIR: /root/.ccache
+      CCACHE_MAXSIZE: 2G
+    steps:
+      - name: Install build deps
+        run: |
+          apt-get update
+          apt-get install -y \
+            build-essential cmake git ccache lsb-release file \
+            bison flex perl gfortran imagemagick \
+            zlib1g-dev libnetcdf-dev libhdf5-dev libpcre3-dev \
+            libgsl-dev libfftw3-dev libjpeg-dev libopenjp2-7-dev \
+            libarchive-dev libexpat1-dev libopenblas-dev
+          if [ "${{ matrix.variant }}" = "full" ]; then
+            apt-get install -y libx11-dev libxi-dev libxmu-dev \
+              libgl-dev libglu1-mesa-dev freeglut3-dev libxext-dev
+          fi
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: actions/cache@v4
+        with:
+          path: /root/.ccache
+          key: ccache-${{ matrix.image }}-${{ matrix.variant }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ matrix.image }}-${{ matrix.variant }}-
+      - name: Configure + build + package
+        run: |
+          set -euxo pipefail
+          if [ "${{ matrix.variant }}" = "full" ]; then VISUAL=ON; else VISUAL=OFF; fi
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/opt/minc/${{ needs.meta.outputs.version }} \
+            -DCPACK_PACKAGE_VERSION=${{ needs.meta.outputs.version }} \
+            -DMINC_TOOLKIT_PACKAGE_VERSION_MAJOR=${{ needs.meta.outputs.major }} \
+            -DMINC_TOOLKIT_PACKAGE_VERSION_MINOR=${{ needs.meta.outputs.minor }} \
+            -DMINC_TOOLKIT_PACKAGE_VERSION_PATCH=${{ needs.meta.outputs.patch }} \
+            -DMT_BUILD_SHARED_LIBS=ON \
+            -DMT_BUILD_ITK_TOOLS=ON \
+            -DMT_BUILD_ANTS=ON \
+            -DMT_BUILD_C3D=ON \
+            -DMT_BUILD_ELASTIX=ON \
+            -DMT_BUILD_VISUAL_TOOLS=$VISUAL \
+            -DMT_BUILD_OPENBLAS=OFF \
+            -DMT_USE_OPENMP=ON \
+            -DUSE_SYSTEM_ZLIB=ON \
+            -DUSE_SYSTEM_NETCDF=ON \
+            -DUSE_SYSTEM_HDF5=ON \
+            -DUSE_SYSTEM_PCRE=ON \
+            -DUSE_SYSTEM_GSL=ON \
+            -DUSE_SYSTEM_FFTW3F=ON \
+            -DUSE_SYSTEM_FFTW3D=ON \
+            -DUSE_SYSTEM_JPEG=ON \
+            -DUSE_SYSTEM_OPENJPEG=ON \
+            -DUSE_SYSTEM_LIBARCHIVE=ON \
+            -DUSE_SYSTEM_ITK=OFF \
+            .
+          cmake --build build -j"$(nproc)"
+          df -h && du -sh build/ || true
+          cd build && cpack -G DEB
+      - name: Rename artifact
+        run: |
+          mv build/*.deb \
+            "minc-toolkit-v2_${{ needs.meta.outputs.version }}_${{ matrix.distro }}-${{ matrix.codename }}-${{ matrix.variant }}_amd64.deb"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deb-${{ matrix.distro }}-${{ matrix.codename }}-${{ matrix.variant }}
+          path: '*.deb'
+
+  rpm:
+    needs: meta
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { release: 41, image: 'fedora:41', variant: minimal }
+          - { release: 41, image: 'fedora:41', variant: full }
+          - { release: 42, image: 'fedora:42', variant: minimal }
+          - { release: 42, image: 'fedora:42', variant: full }
+    container: ${{ matrix.image }}
+    env:
+      CCACHE_DIR: /root/.ccache
+      CCACHE_MAXSIZE: 2G
+    steps:
+      - name: Install build deps
+        run: |
+          dnf install -y \
+            gcc gcc-c++ gcc-gfortran cmake make git ccache rpm-build file \
+            bison flex perl perl-FindBin perl-File-Path ImageMagick \
+            zlib-devel netcdf-devel hdf5-devel pcre-devel gsl-devel \
+            fftw-devel libjpeg-turbo-devel openjpeg2-devel \
+            libarchive-devel expat-devel openblas-devel
+          if [ "${{ matrix.variant }}" = "full" ]; then
+            dnf install -y libX11-devel libXi-devel libXmu-devel \
+              mesa-libGL-devel mesa-libGLU-devel freeglut-devel libXext-devel
+          fi
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: actions/cache@v4
+        with:
+          path: /root/.ccache
+          key: ccache-${{ matrix.image }}-${{ matrix.variant }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ matrix.image }}-${{ matrix.variant }}-
+      - name: Configure + build + package
+        run: |
+          set -euxo pipefail
+          if [ "${{ matrix.variant }}" = "full" ]; then VISUAL=ON; else VISUAL=OFF; fi
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/opt/minc/${{ needs.meta.outputs.version }} \
+            -DCPACK_PACKAGE_VERSION=${{ needs.meta.outputs.version }} \
+            -DMINC_TOOLKIT_PACKAGE_VERSION_MAJOR=${{ needs.meta.outputs.major }} \
+            -DMINC_TOOLKIT_PACKAGE_VERSION_MINOR=${{ needs.meta.outputs.minor }} \
+            -DMINC_TOOLKIT_PACKAGE_VERSION_PATCH=${{ needs.meta.outputs.patch }} \
+            -DMT_BUILD_SHARED_LIBS=ON \
+            -DMT_BUILD_ITK_TOOLS=ON \
+            -DMT_BUILD_ANTS=ON \
+            -DMT_BUILD_C3D=ON \
+            -DMT_BUILD_ELASTIX=ON \
+            -DMT_BUILD_VISUAL_TOOLS=$VISUAL \
+            -DMT_BUILD_OPENBLAS=OFF \
+            -DMT_USE_OPENMP=ON \
+            -DUSE_SYSTEM_ZLIB=ON \
+            -DUSE_SYSTEM_NETCDF=ON \
+            -DUSE_SYSTEM_HDF5=ON \
+            -DUSE_SYSTEM_PCRE=ON \
+            -DUSE_SYSTEM_GSL=ON \
+            -DUSE_SYSTEM_FFTW3F=ON \
+            -DUSE_SYSTEM_FFTW3D=ON \
+            -DUSE_SYSTEM_JPEG=ON \
+            -DUSE_SYSTEM_OPENJPEG=ON \
+            -DUSE_SYSTEM_LIBARCHIVE=ON \
+            -DUSE_SYSTEM_ITK=OFF \
+            .
+          cmake --build build -j"$(nproc)"
+          df -h && du -sh build/ || true
+          cd build && cpack -G RPM
+      - name: Rename artifact
+        run: |
+          mv build/*.rpm \
+            "minc-toolkit-v2-${{ needs.meta.outputs.version }}-fc${{ matrix.release }}-${{ matrix.variant }}.x86_64.rpm"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rpm-fc${{ matrix.release }}-${{ matrix.variant }}
+          path: '*.rpm'
+
+  macos:
+    needs: meta
+    runs-on: macos-14
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [minimal, full]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Install build deps
+        run: brew install cmake ccache bison flex pkg-config
+      - name: Configure + build + package
+        run: |
+          set -euxo pipefail
+          if [ "${{ matrix.variant }}" = "full" ]; then VISUAL=ON; else VISUAL=OFF; fi
+          cmake -B build \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 \
+            -DCMAKE_INSTALL_PREFIX=/opt/minc/${{ needs.meta.outputs.version }} \
+            -DCPACK_PACKAGE_VERSION=${{ needs.meta.outputs.version }} \
+            -DMINC_TOOLKIT_PACKAGE_VERSION_MAJOR=${{ needs.meta.outputs.major }} \
+            -DMINC_TOOLKIT_PACKAGE_VERSION_MINOR=${{ needs.meta.outputs.minor }} \
+            -DMINC_TOOLKIT_PACKAGE_VERSION_PATCH=${{ needs.meta.outputs.patch }} \
+            -DMT_BUILD_SHARED_LIBS=ON \
+            -DMT_BUILD_VISUAL_TOOLS=$VISUAL \
+            -DMT_BUILD_ITK_TOOLS=ON \
+            -DMT_BUILD_ANTS=ON \
+            -DMT_BUILD_C3D=ON \
+            -DMT_BUILD_ELASTIX=ON \
+            -DMT_BUILD_OPENBLAS=OFF \
+            -DMT_USE_OPENMP=OFF \
+            -DUSE_SYSTEM_ITK=OFF \
+            .
+          cmake --build build -j"$(sysctl -n hw.ncpu)"
+          df -h && du -sh build/ || true
+          cd build && cpack -G productbuild
+      - name: Rename artifact
+        run: |
+          mv build/*.pkg \
+            "minc-toolkit-v2-${{ needs.meta.outputs.version }}-macos-universal-${{ matrix.variant }}.pkg"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ matrix.variant }}
+          path: '*.pkg'
+
+  release:
+    if: github.event_name == 'push'
+    needs: [meta, source-tarball, deb, rpm, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          tag_name: ${{ github.ref_name }}
+          draft: true
+          generate_release_notes: true
+          body: |
+            ## Installation
+
+            **Linux**:
+            - Ubuntu 22.04 / 24.04 / Debian 12: `sudo dpkg -i minc-toolkit-v2_<version>_<distro>-<codename>-<variant>_amd64.deb && sudo apt-get install -fy`
+            - Fedora 41 / 42: `sudo dnf install minc-toolkit-v2-<version>-fc<release>-<variant>.x86_64.rpm`
+
+            **macOS** (universal arm64+x86_64):
+            - Open the `.pkg`. **First run is unsigned**: right-click → Open to bypass Gatekeeper.
+
+            **Variants**:
+            - `minimal` — toolkit without X11/OpenGL visual tools (Display, Register, ray_trace).
+            - `full` — includes visual tools; pulls in additional X11/OpenGL runtime deps.
+
+            **Source**:
+            - `minc-toolkit-v2-<version>-src.tar.gz` — full source with submodules.

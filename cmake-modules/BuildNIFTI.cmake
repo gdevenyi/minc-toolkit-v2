@@ -79,6 +79,11 @@ macro(build_nifti install_prefix staging_prefix)
             -DCMAKE_INSTALL_RPATH:PATH=${install_prefix}/${CMAKE_INSTALL_LIBDIR}
             -DCMAKE_INSTALL_PREFIX:PATH=${install_prefix}
             -DCMAKE_INSTALL_LIBDIR:PATH=${CMAKE_INSTALL_LIBDIR}
+            # NIFTI's CMakeLists uses its own NIFTI_INSTALL_LIBRARY_DIR variable
+            # (default 'lib'), not CMAKE_INSTALL_LIBDIR. Override it explicitly so
+            # libniftiio.a / libznz.a end up in lib64 on Fedora x86_64. ARCHIVE_DIR
+            # inherits from LIBRARY_DIR per NIFTI's own logic.
+            -DNIFTI_INSTALL_LIBRARY_DIR:PATH=${CMAKE_INSTALL_LIBDIR}
             "-DCMAKE_CXX_FLAGS_RELEASE:STRING=${NIFTI_CMAKE_CXX_FLAGS_RELEASE}"
             "-DCMAKE_C_FLAGS_RELEASE:STRING=${NIFTI_CMAKE_C_FLAGS_RELEASE}"
             "-DCMAKE_CXX_FLAGS_DEBUG:STRING=${NIFTI_CMAKE_CXX_FLAGS_DEBUG}"

@@ -81,8 +81,14 @@ jobs:
           - { distro: ubuntu, codename: jammy,    image: 'ubuntu:22.04', variant: full }
           - { distro: ubuntu, codename: noble,    image: 'ubuntu:24.04', variant: minimal }
           - { distro: ubuntu, codename: noble,    image: 'ubuntu:24.04', variant: full }
+          - { distro: ubuntu, codename: resolute, image: 'ubuntu:26.04', variant: minimal }
+          - { distro: ubuntu, codename: resolute, image: 'ubuntu:26.04', variant: full }
+          - { distro: debian, codename: bullseye, image: 'debian:11',    variant: minimal }
+          - { distro: debian, codename: bullseye, image: 'debian:11',    variant: full }
           - { distro: debian, codename: bookworm, image: 'debian:12',    variant: minimal }
           - { distro: debian, codename: bookworm, image: 'debian:12',    variant: full }
+          - { distro: debian, codename: trixie,   image: 'debian:13',    variant: minimal }
+          - { distro: debian, codename: trixie,   image: 'debian:13',    variant: full }
     container: ${{ matrix.image }}
     env:
       DEBIAN_FRONTEND: noninteractive
@@ -164,14 +170,21 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { release: 41, image: 'fedora:41', variant: minimal }
-          - { release: 41, image: 'fedora:41', variant: full }
           - { release: 42, image: 'fedora:42', variant: minimal }
           - { release: 42, image: 'fedora:42', variant: full }
+          - { release: 43, image: 'fedora:43', variant: minimal }
+          - { release: 43, image: 'fedora:43', variant: full }
+          - { release: 44, image: 'fedora:44', variant: minimal }
+          - { release: 44, image: 'fedora:44', variant: full }
     container: ${{ matrix.image }}
     env:
       CCACHE_DIR: /root/.ccache
       CCACHE_MAXSIZE: 2G
+      # Fedora's rpmbuild check-rpaths rejects RPATHs that point into the
+      # install dir itself (e.g. /opt/minc/X/lib in a binary in /opt/minc/X/lib).
+      # The toolkit needs that RPATH to find its own libraries at runtime, so
+      # silence the check rather than scrub the rpaths.
+      QA_RPATHS: 0x000f
     steps:
       - name: Install build deps
         run: |
@@ -242,10 +255,11 @@ jobs:
 
   macos:
     needs: meta
-    runs-on: macos-14
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
+        runner: [macos-14, macos-15, macos-26]
         variant: [minimal, full]
     steps:
       - uses: actions/checkout@v4
@@ -282,10 +296,10 @@ jobs:
       - name: Rename artifact
         run: |
           mv build/*.pkg \
-            "minc-toolkit-v2-${{ needs.meta.outputs.version }}-macos-universal-${{ matrix.variant }}.pkg"
+            "minc-toolkit-v2-${{ needs.meta.outputs.version }}-${{ matrix.runner }}-universal-${{ matrix.variant }}.pkg"
       - uses: actions/upload-artifact@v4
         with:
-          name: macos-${{ matrix.variant }}
+          name: ${{ matrix.runner }}-${{ matrix.variant }}
           path: '*.pkg'
 
   release:
@@ -307,11 +321,11 @@ jobs:
             ## Installation
 
             **Linux**:
-            - Ubuntu 22.04 / 24.04 / Debian 12: `sudo dpkg -i minc-toolkit-v2_<version>_<distro>-<codename>-<variant>_amd64.deb && sudo apt-get install -fy`
-            - Fedora 41 / 42: `sudo dnf install minc-toolkit-v2-<version>-fc<release>-<variant>.x86_64.rpm`
+            - Ubuntu 22.04 / 24.04 / 26.04 / Debian 11 / 12 / 13: `sudo dpkg -i minc-toolkit-v2_<version>_<distro>-<codename>-<variant>_amd64.deb && sudo apt-get install -fy`
+            - Fedora 42 / 43 / 44: `sudo dnf install minc-toolkit-v2-<version>-fc<release>-<variant>.x86_64.rpm`
 
-            **macOS** (universal arm64+x86_64):
-            - Open the `.pkg`. **First run is unsigned**: right-click → Open to bypass Gatekeeper.
+            **macOS** (universal arm64+x86_64; built on macos-14 / 15 / 26 runners):
+            - Open the matching `.pkg` for your macOS version. **First run is unsigned**: right-click → Open to bypass Gatekeeper.
 
             **Variants**:
             - `minimal` — toolkit without X11/OpenGL visual tools (Display, Register, ray_trace).

@@ -53,7 +53,10 @@ SET (ZLIB_VERSION_MINOR  2)
     )
   endif()
 
-  GET_PACKAGE("https://zlib.net/zlib-1.3.2.tar.gz" "a1e6c958597af3c67d162995a342138a" "zlib-1.3.2.tar.gz" ZLIB_PATH )
+  # zlib.net only keeps the latest release and rate-limits/404s older tarballs,
+  # causing intermittent download failures. Use the stable GitHub release asset
+  # (same tarball, same md5).
+  GET_PACKAGE("https://github.com/madler/zlib/releases/download/v1.3.2/zlib-1.3.2.tar.gz" "a1e6c958597af3c67d162995a342138a" "zlib-1.3.2.tar.gz" ZLIB_PATH )
   
 ExternalProject_Add(ZLIB
   URL  "${ZLIB_PATH}"

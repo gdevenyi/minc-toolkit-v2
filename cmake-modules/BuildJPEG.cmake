@@ -59,6 +59,9 @@ macro(build_jpeg install_prefix staging_prefix)
     SOURCE_DIR JPEG
     BINARY_DIR JPEG-build
     LIST_SEPARATOR :::
+    PATCH_COMMAND ${CMAKE_COMMAND}
+        -DSOURCE_DIR=<SOURCE_DIR>
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules/PatchJPEG.cmake
     CMAKE_GENERATOR ${CMAKE_GEN}
     CMAKE_ARGS
       -DENABLE_SHARED:BOOL=OFF

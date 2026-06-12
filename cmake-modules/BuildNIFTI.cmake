@@ -105,7 +105,7 @@ macro(build_nifti install_prefix staging_prefix)
             -DUSE_NIFTI2_CODE:BOOL=OFF
             -DUSE_NIFTICDF_CODE:BOOL=OFF
             -DNIFTI_INSTALL_NO_DOCS:BOOL=ON
-   
+            ${CMAKE_OSX_EXTERNAL_PROJECT_ARGS}
     INSTALL_COMMAND $(MAKE) install DESTDIR=${staging_prefix}
     INSTALL_DIR ${staging_prefix}/${install_prefix}
   )

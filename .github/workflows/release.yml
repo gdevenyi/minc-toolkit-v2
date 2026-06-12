@@ -283,7 +283,7 @@ jobs:
           set -euxo pipefail
           if [ "${{ matrix.variant }}" = "full" ]; then VISUAL=ON; else VISUAL=OFF; fi
           cmake -B build \
-            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+            -DCMAKE_OSX_ARCHITECTURES="arm64" \
             -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 \
             -DCMAKE_INSTALL_PREFIX=/opt/minc/${{ needs.meta.outputs.version }} \
             -DCPACK_PACKAGE_VERSION=${{ needs.meta.outputs.version }} \
@@ -334,7 +334,7 @@ jobs:
             - Ubuntu 22.04 / 24.04 / 26.04 / Debian 11 / 12 / 13: `sudo dpkg -i minc-toolkit-v2_<version>_<distro>-<codename>-<variant>_amd64.deb && sudo apt-get install -fy`
             - Fedora 42 / 43 / 44: `sudo dnf install minc-toolkit-v2-<version>-fc<release>-<variant>.x86_64.rpm`
 
-            **macOS** (universal arm64+x86_64; built on macos-14 / 15 / 26 runners):
+            **macOS** (Apple Silicon / arm64; built on macos-14 / 15 / 26 runners):
             - Open the matching `.pkg` for your macOS version. **First run is unsigned**: right-click → Open to bypass Gatekeeper.
 
             **Variants**:

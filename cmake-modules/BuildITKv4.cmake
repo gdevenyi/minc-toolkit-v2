@@ -74,6 +74,12 @@ macro(build_itkv4 install_prefix staging_prefix minc_dir)
       -DCMAKE_OSX_ARCHITECTURES:STRING=${CMAKE_OSX_ARCHITECTURES_EXTSEP}
       -DCMAKE_OSX_SYSROOT:STRING=${CMAKE_OSX_SYSROOT}
       -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}
+      # ITK 4.14's bundled libpng is broken on modern macOS (ARM NEON filter
+      # init undefined, and pngpriv.h includes the long-removed <fp.h>). Use
+      # the Homebrew system libpng instead. Linux keeps the bundled copy, which
+      # builds fine. PNG_ROOT points FindPNG at the (arm64) Homebrew prefix.
+      -DITK_USE_SYSTEM_PNG:BOOL=ON
+      -DPNG_ROOT:PATH=/opt/homebrew
     )
   endif(APPLE)
 
@@ -167,11 +173,6 @@ macro(build_itkv4 install_prefix staging_prefix minc_dir)
         ${CMAKE_EXTERNAL_PROJECT_ARGS}
         -DBUILD_EXAMPLES:BOOL=OFF
         -DBUILD_TESTING:BOOL=OFF
-        # ITK 4.14's bundled libpng references the ARM NEON filter init from
-        # pngrutil.c but does not compile the NEON intrinsics source on Apple
-        # Silicon, leaving _png_init_filter_functions_neon undefined. Disable
-        # the PNG NEON optimisation so no NEON symbols are referenced.
-        -DPNG_ARM_NEON:STRING=off
         -DModule_ITKReview:BOOL=ON
         -DModule_ITKIOMINC:BOOL=ON
         -DModule_ITKIOTransformMINC:BOOL=ON

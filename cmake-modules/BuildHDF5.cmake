@@ -62,11 +62,11 @@ macro(build_hdf5 install_prefix staging_prefix)
   SET(HDF_CMAKE_CXX_FLAGS "-fPIC ${CMAKE_CXX_FLAGS}")
   SET(HDF_CMAKE_C_FLAGS   "-fPIC ${CMAKE_C_FLAGS}")
 
-  GET_PACKAGE("https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.6/src/hdf5-1.10.6.tar.bz2" "03095102a6118c32a75a9b9b40be66f2" "hdf5-1.10.6.tar.bz2" HDF5_PATH )
+  GET_PACKAGE("https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.11/src/hdf5-1.10.11.tar.bz2" "b60f44a9210770794fb9a2949bfb9587" "hdf5-1.10.11.tar.bz2" HDF5_PATH )
 
 ExternalProject_Add(HDF5
   URL "${HDF5_PATH}"
-  URL_MD5 "03095102a6118c32a75a9b9b40be66f2"
+  URL_MD5 "b60f44a9210770794fb9a2949bfb9587"
   SOURCE_DIR HDF5
   BINARY_DIR HDF5-build
   LIST_SEPARATOR :::
@@ -98,10 +98,10 @@ ExternalProject_Add(HDF5
       -DSKIP_HDF5_FORTRAN_SHARED:BOOL=ON
       ${CMAKE_EXTERNAL_PROJECT_ARGS}
       ${CMAKE_OSX_EXTERNAL_PROJECT_ARGS}
-      # hdf5-1.10.6 has K&R-era implicit function declarations (e.g.
-      # H5O__fsinfo_set_version in H5Fsuper.c). Modern clang/GCC make those a
-      # hard error by default; downgrade to a warning so the vendored build
-      # survives. Placed after CMAKE_EXTERNAL_PROJECT_ARGS so it wins.
+      # Older HDF5 sources have K&R-era implicit function declarations that
+      # modern clang/GCC make a hard error by default; downgrade to a warning
+      # so the vendored build survives. Placed after CMAKE_EXTERNAL_PROJECT_ARGS
+      # so it wins.
       "-DCMAKE_C_FLAGS:STRING=-Wno-error=implicit-function-declaration ${CMAKE_C_FLAGS}"
   INSTALL_COMMAND $(MAKE) install DESTDIR=${staging_prefix}
   INSTALL_DIR ${staging_prefix}/${install_prefix}

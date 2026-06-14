@@ -113,6 +113,12 @@ ExternalProject_Add(HDF5
       # so the vendored build survives. Placed after CMAKE_EXTERNAL_PROJECT_ARGS
       # so it wins.
       "-DCMAKE_C_FLAGS:STRING=-Wno-error=implicit-function-declaration ${CMAKE_C_FLAGS}"
+      # HDF5_EXTERNALLY_CONFIGURED suppresses HDF5's own linking of external
+      # deps, so the shared libhdf5.dylib never links zlib (compress2/inflate
+      # undefined; macOS dylibs must resolve all symbols at link). Force the
+      # static libz onto the shared link line directly. Unused on Linux .so but
+      # harmless. Placed last so it wins over CMAKE_EXTERNAL_PROJECT_ARGS.
+      "-DCMAKE_SHARED_LINKER_FLAGS:STRING=${ZLIB_STATIC_LIBRARY} ${CMAKE_SHARED_LINKER_FLAGS}"
   INSTALL_COMMAND $(MAKE) install DESTDIR=${staging_prefix}
   INSTALL_DIR ${staging_prefix}/${install_prefix}
 #  TEST_COMMAND make test

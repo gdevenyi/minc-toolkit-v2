@@ -93,6 +93,11 @@ ExternalProject_Add(HDF5
       -DZLIB_INCLUDE_DIRS:STRING=${ZLIB_INCLUDE_DIR}
       -DZLIB_INCLUDE_DIR:STRING=${ZLIB_INCLUDE_DIR}
       -DZLIB_LIBRARIES:STRING=${ZLIB_STATIC_LIBRARY}
+      # HDF5 1.10.11 consumes the standard FindZLIB variable ZLIB_LIBRARY when
+      # linking libhdf5; without it the shared libhdf5.dylib link on macOS is
+      # missing zlib (compress2/inflate undefined -- macOS dylibs, unlike Linux
+      # .so, require all symbols resolved at link time).
+      -DZLIB_LIBRARY:FILEPATH=${ZLIB_STATIC_LIBRARY}
       -DZLIB_STATIC_LIBRARY:STRING=${ZLIB_STATIC_LIBRARY}
       -DZLIB_SHARED_LIBRARY:STRING=${ZLIB_STATIC_LIBRARY}  # for fixing error with restricted binaries on MacOSX
       -DSKIP_HDF5_FORTRAN_SHARED:BOOL=ON

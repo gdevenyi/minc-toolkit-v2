@@ -85,7 +85,12 @@ ExternalProject_Add(HDF5
       -DHDF5_BUILD_CPP_LIB:BOOL=ON
       -DHDF5_BUILD_TOOLS:BOOL=ON
       -DHDF5_BUILD_EXAMPLES:BOOL=OFF
-      -DZLIB_USE_EXTERNAL:BOOL=ON
+      # OFF so HDF5 runs find_package(ZLIB) against the ZLIB_LIBRARY/INCLUDE we
+      # provide, yielding a proper ZLIB::ZLIB import target that gets linked
+      # into libhdf5. With ON, HDF5 treats zlib as a loosely-tracked external
+      # and the shared libhdf5.dylib link omits it (compress2/inflate undefined
+      # on macOS, where dylibs must resolve all symbols at link time).
+      -DZLIB_USE_EXTERNAL:BOOL=OFF
       -DHDF5_EXTERNALLY_CONFIGURED:BOOL=ON
       -DHDF5_ENABLE_Z_LIB_SUPPORT:BOOL=ON
       -DH5_ZLIB_HEADER:STRING=zlib.h

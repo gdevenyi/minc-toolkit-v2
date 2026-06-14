@@ -119,6 +119,9 @@ ExternalProject_Add(HDF5
       # static libz onto the shared link line directly. Unused on Linux .so but
       # harmless. Placed last so it wins over CMAKE_EXTERNAL_PROJECT_ARGS.
       "-DCMAKE_SHARED_LINKER_FLAGS:STRING=${ZLIB_STATIC_LIBRARY} ${CMAKE_SHARED_LINKER_FLAGS}"
+      # Same for the HDF5 executables (h5diff etc.), which link the static
+      # libhdf5.a and likewise need zlib resolved at link time on macOS.
+      "-DCMAKE_EXE_LINKER_FLAGS:STRING=${ZLIB_STATIC_LIBRARY} ${CMAKE_EXE_LINKER_FLAGS}"
   INSTALL_COMMAND $(MAKE) install DESTDIR=${staging_prefix}
   INSTALL_DIR ${staging_prefix}/${install_prefix}
 #  TEST_COMMAND make test

@@ -70,10 +70,16 @@ macro(build_itkv4 install_prefix staging_prefix minc_dir)
         -DNETCDF_LIBRARY:STRING=${NETCDF_LIBRARY}
   )
   if(APPLE)
+    # The macOS runners ship CMake 4.x, whose FindHDF5 module ignores the
+    # manual HDF5_hdf5_LIBRARY hints (older CMake on the Linux runners still
+    # honours them). Point it at the staged HDF5 prefix via HDF5_ROOT so it can
+    # resolve HDF5_LIBRARIES ("Could NOT find HDF5 (missing: HDF5_LIBRARIES)").
+    get_filename_component(HDF5_ROOT_DIR "${HDF5_INCLUDE_DIR}" DIRECTORY)
     list(APPEND CMAKE_EXTERNAL_PROJECT_ARGS
       -DCMAKE_OSX_ARCHITECTURES:STRING=${CMAKE_OSX_ARCHITECTURES_EXTSEP}
       -DCMAKE_OSX_SYSROOT:STRING=${CMAKE_OSX_SYSROOT}
       -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}
+      -DHDF5_ROOT:PATH=${HDF5_ROOT_DIR}
       # ITK 4.14's bundled libpng is broken on modern macOS (ARM NEON filter
       # init undefined, and pngpriv.h includes the long-removed <fp.h>). Use
       # the Homebrew system libpng instead. Linux keeps the bundled copy, which

@@ -166,7 +166,7 @@ macro(build_itkv4 install_prefix staging_prefix minc_dir)
     UPDATE_COMMAND ""
     # Interim C++20 fix for KWSys std::allocator::rebind (ITK PR #6513); remove
     # once the pin above is bumped past that merge.
-    PATCH_COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=<SOURCE_DIR> -P ${CMAKE_CURRENT_LIST_DIR}/PatchITK.cmake
+    PATCH_COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=<SOURCE_DIR> -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules/PatchITK.cmake
     SOURCE_DIR ITKv4
     BINARY_DIR ITKv4-build
     LIST_SEPARATOR :::

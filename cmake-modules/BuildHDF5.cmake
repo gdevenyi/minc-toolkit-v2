@@ -80,10 +80,23 @@ ExternalProject_Add(HDF5
       -DMACOSX_RPATH:BOOL=ON
       -DCMAKE_INSTALL_RPATH:PATH=${install_prefix}/lib${LIB_SUFFIX}
       -DCMAKE_INSTALL_PREFIX:PATH=${install_prefix}
-      -DHDF5_INSTALL_CMAKE_DIR:PATH=${install_prefix}
-      -DHDF5_NO_PACKAGES:BOOL=ON
+      -DHDF5_INSTALL_CMAKE_DIR:PATH=share/cmake/hdf5
+      # Install the HDF5 CMake package (config + exported hdf5/hdf5_cpp targets)
+      # so ITK (ITK_USE_SYSTEM_HDF5) records a find_package(HDF5 NO_MODULE)
+      # against OUR prefix. Without it ITK baked the system /usr/lib/cmake/hdf5
+      # into ITKHDF5.cmake and recorded only libz, so downstream executables
+      # (c3d, elastix) linking ITKIOTransformHDF5 failed with undefined H5::*.
+      -DHDF5_NO_PACKAGES:BOOL=OFF
       -DHDF5_BUILD_CPP_LIB:BOOL=ON
-      -DHDF5_BUILD_TOOLS:BOOL=ON
+      # The toolkit links libhdf5 directly and never invokes the HDF5 CLI tools
+      # (h5ls/h5dump/h5diff...). Building them is wasted time and, with
+      # HDF5_EXTERNALLY_CONFIGURED=ON suppressing HDF5's own zlib linking, the
+      # tool executables fail to link on GNU ld: zlib is forced onto the link
+      # line via CMAKE_EXE_LINKER_FLAGS, but ld resolves left-to-right so a
+      # static libz placed before libhdf5.a leaves compress2/inflate undefined.
+      # macOS's linker is order-insensitive so it didn't surface there. Drop
+      # the tools entirely -- nothing downstream needs them.
+      -DHDF5_BUILD_TOOLS:BOOL=OFF
       -DHDF5_BUILD_EXAMPLES:BOOL=OFF
       # OFF so HDF5 runs find_package(ZLIB) against the ZLIB_LIBRARY/INCLUDE we
       # provide, yielding a proper ZLIB::ZLIB import target that gets linked
@@ -91,7 +104,11 @@ ExternalProject_Add(HDF5
       # and the shared libhdf5.dylib link omits it (compress2/inflate undefined
       # on macOS, where dylibs must resolve all symbols at link time).
       -DZLIB_USE_EXTERNAL:BOOL=OFF
-      -DHDF5_EXTERNALLY_CONFIGURED:BOOL=ON
+      # OFF so HDF5 generates and installs its normal CMake package config and
+      # exported targets (needed by ITK downstream, above) AND links zlib via its
+      # own ZLIB::ZLIB target into libhdf5 -- the correct ordering on every
+      # linker, superseding the manual CMAKE_*_LINKER_FLAGS zlib prepends.
+      -DHDF5_EXTERNALLY_CONFIGURED:BOOL=OFF
       -DHDF5_ENABLE_Z_LIB_SUPPORT:BOOL=ON
       -DH5_ZLIB_HEADER:STRING=zlib.h
       -DH5_HAVE_ZLIB_H:BOOL=ON
@@ -159,6 +176,11 @@ SET(HDF5_LIBRARY     ${staging_prefix}/${install_prefix}/lib${LIB_SUFFIX}/libhdf
 
 SET(HDF5_LIBRARIES    ${HDF5_LIBRARY})
 SET(HDF5_INCLUDE_DIRS ${HDF5_INCLUDE_DIR})
+
+# Location of the installed HDF5 CMake package (config + exported targets), so
+# downstream (ITK via ITK_USE_SYSTEM_HDF5) resolves find_package(HDF5 NO_MODULE)
+# against our prefix instead of a system HDF5.
+SET(HDF5_DIR ${staging_prefix}/${install_prefix}/share/cmake/hdf5 )
 
 SET(HDF5_DIR         ${staging_prefix}/${install_prefix}/share/cmake/hdf5)
 SET(HDF5_FOUND ON)

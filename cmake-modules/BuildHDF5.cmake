@@ -88,15 +88,15 @@ ExternalProject_Add(HDF5
       # (c3d, elastix) linking ITKIOTransformHDF5 failed with undefined H5::*.
       -DHDF5_NO_PACKAGES:BOOL=OFF
       -DHDF5_BUILD_CPP_LIB:BOOL=ON
-      # The toolkit links libhdf5 directly and never invokes the HDF5 CLI tools
-      # (h5ls/h5dump/h5diff...). Building them is wasted time and, with
-      # HDF5_EXTERNALLY_CONFIGURED=ON suppressing HDF5's own zlib linking, the
-      # tool executables fail to link on GNU ld: zlib is forced onto the link
-      # line via CMAKE_EXE_LINKER_FLAGS, but ld resolves left-to-right so a
-      # static libz placed before libhdf5.a leaves compress2/inflate undefined.
-      # macOS's linker is order-insensitive so it didn't surface there. Drop
-      # the tools entirely -- nothing downstream needs them.
-      -DHDF5_BUILD_TOOLS:BOOL=OFF
+      # Build the HDF5 CLI tools/wrappers (h5cc etc.). These are needed by
+      # downstream FindHDF5 (MODULE mode): libminc's LIBMINCConfig.cmake does
+      # find_dependency(HDF5), and on macOS FindHDF5 relies on the h5cc wrapper
+      # to determine flags/libs -- without it ITK's MINC module configure fails
+      # "Unable to determine HDF5 C flags from HDF5 wrapper / missing
+      # HDF5_LIBRARIES". (They were briefly disabled because the tool link
+      # dropped zlib on GNU ld under HDF5_EXTERNALLY_CONFIGURED=ON; that is now
+      # OFF, so HDF5 links zlib into the tools itself with correct order.)
+      -DHDF5_BUILD_TOOLS:BOOL=ON
       -DHDF5_BUILD_EXAMPLES:BOOL=OFF
       # OFF so HDF5 runs find_package(ZLIB) against the ZLIB_LIBRARY/INCLUDE we
       # provide, yielding a proper ZLIB::ZLIB import target that gets linked
@@ -130,15 +130,14 @@ ExternalProject_Add(HDF5
       # so the vendored build survives. Placed after CMAKE_EXTERNAL_PROJECT_ARGS
       # so it wins.
       "-DCMAKE_C_FLAGS:STRING=-Wno-error=implicit-function-declaration ${CMAKE_C_FLAGS}"
-      # HDF5_EXTERNALLY_CONFIGURED suppresses HDF5's own linking of external
-      # deps, so the shared libhdf5.dylib never links zlib (compress2/inflate
-      # undefined; macOS dylibs must resolve all symbols at link). Force the
-      # static libz onto the shared link line directly. Unused on Linux .so but
-      # harmless. Placed last so it wins over CMAKE_EXTERNAL_PROJECT_ARGS.
-      "-DCMAKE_SHARED_LINKER_FLAGS:STRING=${ZLIB_STATIC_LIBRARY} ${CMAKE_SHARED_LINKER_FLAGS}"
-      # Same for the HDF5 executables (h5diff etc.), which link the static
-      # libhdf5.a and likewise need zlib resolved at link time on macOS.
-      "-DCMAKE_EXE_LINKER_FLAGS:STRING=${ZLIB_STATIC_LIBRARY} ${CMAKE_EXE_LINKER_FLAGS}"
+      # HDF5 links our static zlib only PRIVATE to libhdf5, which a static
+      # libhdf5.a does not propagate to the CLI tools (h5ls/h5repart...), so they
+      # fail with undefined compress2/inflate. Put zlib in *_STANDARD_LIBRARIES,
+      # which CMake appends at the very END of every link line -- after
+      # libhdf5.a -- so GNU ld (left-to-right archive resolution) and macOS both
+      # resolve it. This covers the library and all tools.
+      "-DCMAKE_C_STANDARD_LIBRARIES:STRING=${ZLIB_STATIC_LIBRARY}"
+      "-DCMAKE_CXX_STANDARD_LIBRARIES:STRING=${ZLIB_STATIC_LIBRARY}"
   INSTALL_COMMAND $(MAKE) install DESTDIR=${staging_prefix}
   INSTALL_DIR ${staging_prefix}/${install_prefix}
 #  TEST_COMMAND make test

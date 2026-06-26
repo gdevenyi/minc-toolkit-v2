@@ -170,6 +170,12 @@ macro(build_itkv4 install_prefix staging_prefix minc_dir)
     CMAKE_GENERATOR ${CMAKE_GEN}
     CMAKE_ARGS
         -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+        # Honour HDF5_ROOT (set below) in find_package(HDF5). libminc's installed
+        # LIBMINCConfig.cmake does find_dependency(HDF5) under a pre-3.12 policy
+        # scope where CMP0074 defaults OLD, so newer CMake (macOS 4.x) ignored
+        # HDF5_ROOT and FindHDF5 failed ("Unable to determine HDF5 C flags from
+        # HDF5 wrapper / missing HDF5_LIBRARIES"). Force the policy NEW.
+        -DCMAKE_POLICY_DEFAULT_CMP0074:STRING=NEW
         -DBUILD_SHARED_LIBS:BOOL=${ITK_SHARED_LIBRARY}
         -DCMAKE_INSTALL_PREFIX:PATH=${install_prefix}
         -DCMAKE_SKIP_RPATH:BOOL=OFF

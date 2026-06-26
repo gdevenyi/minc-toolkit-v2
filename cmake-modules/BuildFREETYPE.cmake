@@ -18,7 +18,7 @@ macro(build_freetype install_prefix staging_prefix  zlib_include_dir zlib_librar
           INSTALL_DIR     "${CMAKE_BINARY_DIR}/external"
           BUILD_COMMAND   $(MAKE) 
           INSTALL_COMMAND $(MAKE) DESTDIR=${CMAKE_BINARY_DIR}/external install 
-          CONFIGURE_COMMAND  ./configure --prefix=${install_prefix} --with-pic --disable-shared --without-harfbuzz --without-bzip2  --without-png --with-zlib --enable-static CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} "CPPFLAGS=${EXT_CXX_FLAGS}"  "CXXFLAGS=${EXT_CXX_FLAGS}" "CFLAGS=${EXT_C_FLAGS}" "LDFLAGS=${EXT_LDFLAGS}"
+          CONFIGURE_COMMAND  ./configure --prefix=${install_prefix} --with-pic --disable-shared --without-harfbuzz --without-bzip2  --without-png --with-zlib --enable-static CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} "CPPFLAGS=${EXT_C_FLAGS}"  "CXXFLAGS=${EXT_CXX_FLAGS}" "CFLAGS=${EXT_C_FLAGS}" "LDFLAGS=${EXT_LDFLAGS}"
   #        INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/external
         )
         

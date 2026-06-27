@@ -63,6 +63,7 @@ jobs:
             -DMINC_TOOLKIT_PACKAGE_VERSION_MINOR=${{ needs.meta.outputs.minor }} \
             -DMINC_TOOLKIT_PACKAGE_VERSION_PATCH=${{ needs.meta.outputs.patch }} \
             -DCPACK_PACKAGE_VERSION=${{ needs.meta.outputs.version }} \
+            -DMT_USE_BLAS=OFF \
             .
           cd build && cpack --config CPackSourceConfig.cmake -G TGZ
       - uses: actions/upload-artifact@v4

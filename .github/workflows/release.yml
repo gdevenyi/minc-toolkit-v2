@@ -286,6 +286,8 @@ jobs:
             -DCMAKE_OSX_ARCHITECTURES="arm64" \
             -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 \
             -DCMAKE_INSTALL_PREFIX=/opt/minc/${{ needs.meta.outputs.version }} \
+            -DCMAKE_BUILD_RPATH="$PWD/build/external/opt/minc/${{ needs.meta.outputs.version }}/lib" \
+            -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON \
             -DCPACK_PACKAGE_VERSION=${{ needs.meta.outputs.version }} \
             -DMINC_TOOLKIT_PACKAGE_VERSION_MAJOR=${{ needs.meta.outputs.major }} \
             -DMINC_TOOLKIT_PACKAGE_VERSION_MINOR=${{ needs.meta.outputs.minor }} \

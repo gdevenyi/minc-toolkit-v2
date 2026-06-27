@@ -179,9 +179,9 @@ OPTION(MT_USE_GLFW           "Use GLFW for visual tools" OFF)
 OPTION(USE_SYSTEM_ITK        "Use System ITK" OFF)
 OPTION(MT_USE_OPENMP         "Use OpenMP multi-threading" OFF)
 OPTION(MT_BUILD_IM           "Build ImageMagick and dependent libraries" OFF)
-OPTION(MT_BUILD_OPENBLAS     "Build OpenBLAS: will require fortran" ON)
 #OPTION(MT_USE_OPENMP_BLAS    "Use Build OpenBLAS with OpenMP support" OFF) # TODO: finish this to compile on some platforms
 OPTION(MNI_AUTOREG_OLD_AMOEBA_INIT "Use legacy version of the code to initialize AMOEBA in minctracc" OFF)
+OPTION(MT_BUILD_DCM2MNC_TESTS "Download dcm2niix DICOM test data and enable dcm2mnc integration tests (requires internet at build time)" OFF)
 
 SET(MT_PACKAGES_PATH "${CMAKE_BINARY_DIR}/cache" CACHE PATH  "Directory containing 3rd party packages")
 
@@ -504,11 +504,31 @@ ADD_SUBDIRECTORY(bic-pipelines)
 ADD_SUBDIRECTORY(perl-modules)
 ADD_SUBDIRECTORY(minc_gco)
 
-IF(MT_BUILD_OPENBLAS)
+# BLAS detection: single point that exports BLAS::BLAS for in-tree consumers
+# and emits forwarding -D flags via blas_external_project_args() for ExternalProject
+# children (BEAST, patch_morphology). When MT_BUILD_OPENBLAS=ON, BLASSourceBuild
+# emits a marker; the actual OpenBLAS ExternalProject is wired below.
+# When MT_USE_BLAS=OFF, BLASSetup short-circuits and creates empty stub targets;
+# the MT_BUILD_OPENBLAS block below is also skipped (BLASSetup rejects that combo).
+IF(MT_USE_BLAS AND MT_BUILD_OPENBLAS)
   enable_language(Fortran)
-  INCLUDE(BuildOpenBLAS)
+ENDIF()
+include(${CMAKE_SOURCE_DIR}/cmake-modules/BLASSetup.cmake)
+IF(MT_USE_BLAS AND MT_BUILD_OPENBLAS)
+  include(BuildOpenBLAS)
   build_open_blas(${CMAKE_INSTALL_PREFIX} ${SUPERBUILD_STAGING_PREFIX} ${MT_USE_OPENMP})
-ENDIF(MT_BUILD_OPENBLAS)
+  set(BLAS_LIBRARIES    "${OpenBLAS_LIBRARIES}")
+  set(BLAS_INCLUDE_DIRS "${OpenBLAS_INCLUDE_DIRS}")
+  set(BLAS_LINKER_FLAGS "")
+  blas_create_target_shim("${OpenBLAS_LIBRARIES}" "" "${OpenBLAS_INCLUDE_DIRS}")
+  # Source build was configured with -DLAPACKE=ON; the staged include dir
+  # owns lapacke.h (materialised at make time, not configure time, so we
+  # don't probe for it — we trust the build flag).
+  set_property(TARGET LAPACKE::LAPACKE APPEND PROPERTY
+    INTERFACE_INCLUDE_DIRECTORIES "${OpenBLAS_INCLUDE_DIRS}")
+  set_property(TARGET LAPACKE::LAPACKE APPEND PROPERTY
+    INTERFACE_COMPILE_DEFINITIONS "HAVE_LAPACKE")
+ENDIF()
 
 #required for EZminc
 IF(USE_SYSTEM_GSL)
@@ -602,7 +622,7 @@ IF(MT_BUILD_ITK_TOOLS)
 
   IF(MT_BUILD_OPENBLAS)
     ADD_DEPENDENCIES(patch_morphology OpenBLAS)
-  ENDIF(MT_BUILD_OPENBLAS)
+  ENDIF()
 
   IF(MT_BUILD_ABC)
    INCLUDE(BuildABC)
@@ -619,8 +639,6 @@ ADD_DEPENDENCIES(BEAST minc_io)
 
 IF(MT_BUILD_OPENBLAS)
     ADD_DEPENDENCIES(BEAST OpenBLAS)
-ELSE()
-    FIND_PACKAGE(OpenBLAS )
 ENDIF()
 
 

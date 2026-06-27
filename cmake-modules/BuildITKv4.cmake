@@ -176,11 +176,6 @@ macro(build_itkv4 install_prefix staging_prefix minc_dir)
         # HDF5_ROOT and FindHDF5 failed ("Unable to determine HDF5 C flags from
         # HDF5 wrapper / missing HDF5_LIBRARIES"). Force the policy NEW.
         -DCMAKE_POLICY_DEFAULT_CMP0074:STRING=NEW
-        # Resolve find_package(HDF5) via our installed hdf5-config.cmake (CONFIG
-        # mode, HDF5_DIR set below) instead of the MODULE FindHDF5, whose h5cc
-        # wrapper parsing and HDF5_ROOT fallback both fail on macOS CMake 4.x
-        # when libminc's LIBMINCConfig.cmake does find_dependency(HDF5).
-        -DCMAKE_FIND_PACKAGE_PREFER_CONFIG:BOOL=TRUE
         -DBUILD_SHARED_LIBS:BOOL=${ITK_SHARED_LIBRARY}
         -DCMAKE_INSTALL_PREFIX:PATH=${install_prefix}
         -DCMAKE_SKIP_RPATH:BOOL=OFF

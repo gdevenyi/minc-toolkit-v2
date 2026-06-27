@@ -277,7 +277,7 @@ jobs:
           submodules: recursive
           fetch-depth: 0
       - name: Install build deps
-        run: brew install cmake ccache bison flex pkg-config libpng
+        run: brew install cmake ccache bison flex pkg-config libpng freeglut
       - name: Configure + build + package
         run: |
           set -euxo pipefail

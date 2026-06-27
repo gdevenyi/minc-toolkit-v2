@@ -116,6 +116,12 @@ IF(NOT CMAKE_CXX_FLAGS MATCHES "-std=")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++17")
 ENDIF()
 
+# The 'register' storage-class keyword was removed in C++17. Vintage vendored
+# code still uses it (e.g. Elastix's ANN/ann_1.1). clang makes this a hard
+# error at C++17 ([-Wregister]); gcc only warns (so Linux built). Downgrade it
+# everywhere so the C++17 cap doesn't break this code on clang/macOS.
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-register")
+
 # At C++17 std::unary_function/binary_function (and other C++17-removed cruft)
 # are gone. libstdc++ still ships them as deprecated, but macOS libc++ removes
 # them, so ITK's KWSys hash_map (used by Convert3D/Elastix) fails to compile

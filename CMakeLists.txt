@@ -116,6 +116,15 @@ IF(NOT CMAKE_CXX_FLAGS MATCHES "-std=")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++17")
 ENDIF()
 
+# At C++17 std::unary_function/binary_function (and other C++17-removed cruft)
+# are gone. libstdc++ still ships them as deprecated, but macOS libc++ removes
+# them, so ITK's KWSys hash_map (used by Convert3D/Elastix) fails to compile
+# ("no template named 'unary_function' in namespace 'std'"). Re-enable the
+# removed features on libc++ via its escape-hatch macros. No-op on libstdc++.
+IF(APPLE)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_LIBCPP_ENABLE_CXX17_REMOVED_FEATURES -D_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION")
+ENDIF()
+
 SET(CPACK_PACKAGE_FILE_NAME "minc-toolkit-${MINC_TOOLKIT_VERSION_FULL}-${MT_SYSTEM_NAME}")
 
 # register local modules

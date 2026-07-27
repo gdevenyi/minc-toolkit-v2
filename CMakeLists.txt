@@ -188,9 +188,10 @@ OPTION(USE_SYSTEM_PNG        "Use system libPNG for ITK (fixes bundled libpng on
 
 OPTION(MT_BUILD_ITK_TOOLS    "Build ITK-based tools"  ON)
 OPTION(MT_BUILD_VISUAL_TOOLS "Build visual tools (Display, Register, postf, ray_trace) requires OpenGL & Glut"  OFF)
-# GLUT is deprecated on macOS (and freeglut is fragile to build there); use
-# bicgl's GLFW/native-Cocoa windowing backend instead when building on Apple.
-OPTION(MT_USE_GLFW           "Use GLFW for visual tools instead of GLUT" ${APPLE})
+# GLUT is deprecated on macOS and GLX-only on Linux (no x2go / SSH X11); use
+# bicgl's GLFW windowing backend (native Cocoa on macOS, X11/EGL on Linux)
+# everywhere by default. -DMT_USE_GLFW=OFF falls back to GLUT (non-Apple only).
+OPTION(MT_USE_GLFW           "Use GLFW for visual tools instead of GLUT" ON)
 # On Apple, GLUT/freeglut is not supported; always use the GLFW backend.
 IF(APPLE AND NOT MT_USE_GLFW)
   MESSAGE(STATUS "Forcing MT_USE_GLFW=ON on Apple (GLUT/freeglut unsupported)")
@@ -675,23 +676,12 @@ IF(MT_BUILD_VISUAL_TOOLS)
   ELSE()
     SET(BICGL_USE_GLUT ON)
     IF(USE_SYSTEM_GLUT)
-      # On macOS, CMake's FindGLUT prefers Apple's GLUT.framework, whose header
-      # is <GLUT/glut.h>; but Display/bicgl include <GL/glut.h>. Point GLUT at
-      # Homebrew freeglut (which provides GL/glut.h) when present.
-      IF(APPLE AND EXISTS "/opt/homebrew/include/GL/glut.h")
-        SET(GLUT_INCLUDE_DIR  "/opt/homebrew/include"          CACHE PATH     "" FORCE)
-        SET(GLUT_glut_LIBRARY "/opt/homebrew/lib/libglut.dylib" CACHE FILEPATH "" FORCE)
-      ENDIF()
       FIND_PACKAGE( GLUT   REQUIRED )
     ELSE(USE_SYSTEM_GLUT)
       INCLUDE(BuildFREEGLUT) # newer version of build_freeglut seem to be causing problems
       build_freeglut( ${CMAKE_INSTALL_PREFIX} ${SUPERBUILD_STAGING_PREFIX})
     ENDIF(USE_SYSTEM_GLUT)
   ENDIF()
-
-  # Homebrew's include dir is not on macOS's default compiler search path, so
-  # make the freeglut/OpenGL headers visible to the visual-tool subdirs.
-  INCLUDE_DIRECTORIES(${GLUT_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR})
 
   ADD_SUBDIRECTORY(bicgl)
   INCLUDE(${CMAKE_BINARY_DIR}/bicgl/BICGLConfig.cmake)

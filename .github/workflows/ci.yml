@@ -46,7 +46,7 @@ jobs:
             libarchive-dev libexpat1-dev libopenblas-dev
           if [ "${{ matrix.variant }}" = "full" ]; then
             apt-get install -y libx11-dev libxi-dev libxmu-dev \
-              libgl-dev libglu1-mesa-dev freeglut3-dev libxext-dev
+              libgl-dev libglu1-mesa-dev libglfw3-dev libx11-dev libxrandr-dev libxext-dev
           fi
       - name: Allow git to read the workspace owned by the runner user
         run: git config --global --add safe.directory '*'
@@ -121,7 +121,7 @@ jobs:
             libarchive-devel expat-devel openblas-devel
           if [ "${{ matrix.variant }}" = "full" ]; then
             dnf install -y libX11-devel libXi-devel libXmu-devel \
-              mesa-libGL-devel mesa-libGLU-devel freeglut-devel libXext-devel
+              mesa-libGL-devel mesa-libGLU-devel glfw-devel libX11-devel libXrandr-devel libXext-devel
           fi
       - name: Allow git to read the workspace owned by the runner user
         run: git config --global --add safe.directory '*'
@@ -186,7 +186,7 @@ jobs:
           submodules: recursive
           fetch-depth: 0
       - name: Install build deps
-        run: brew install cmake ccache bison flex pkg-config libpng freeglut
+        run: brew install cmake ccache bison flex pkg-config libpng glfw
       - uses: actions/cache@v6
         with:
           path: ${{ github.workspace }}/.ccache

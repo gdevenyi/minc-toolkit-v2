@@ -220,7 +220,7 @@ jobs:
         run: |
           set -euxo pipefail
           cd build
-          # nu_reference_1: N3 non-uniformity result drifts ~8.5e-4 RMS on Apple
-          # Silicon (over the 1e-4 tolerance); floating-point variance, not a
-          # regression (passes on Linux). Same exclusion as release.yml.
-          ctest --output-on-failure -j"$(sysctl -n hw.ncpu)" -E 'nu_reference_1'
+          # EXPERIMENT: nu_reference_1 no longer excluded -- testing whether
+          # -ffp-contract=off on the N3 numeric core restores cross-arch
+          # reproducibility against the stored reference.
+          ctest --output-on-failure -j"$(sysctl -n hw.ncpu)"

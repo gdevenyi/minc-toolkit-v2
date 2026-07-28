@@ -474,6 +474,19 @@ IF(NOT USE_SYSTEM_LIBARCHIVE)
 ENDIF(NOT USE_SYSTEM_LIBARCHIVE)
 
 ADD_SUBDIRECTORY(minc-widgets)
+# EXPERIMENT: N3's iterative NU estimation is exquisitely sensitive to
+# floating-point contraction. ARM64 fuses a*b+c into FMA by default (baseline
+# x86-64 has no FMA instruction and must round the intermediate), which flips
+# Bunch-Kaufman pivots inside dsysv_ and diverges over N3's 31 feedback
+# iterations. Disable contraction for the N3 numeric core so results are
+# reproducible across architectures. Applies to C too (CLAPACK is C).
+SET(_MT_SAVED_C_FLAGS   "${CMAKE_C_FLAGS}")
+SET(_MT_SAVED_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+IF(NOT MSVC)
+  SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -ffp-contract=off")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffp-contract=off")
+ENDIF()
+
 ADD_SUBDIRECTORY(EBTKS)
 ADD_DEPENDENCIES(EBTKS minc2)
 
@@ -511,6 +524,9 @@ ADD_SUBDIRECTORY(conglomerate)
 ADD_SUBDIRECTORY(classify)
 ADD_SUBDIRECTORY(mni-perllib)
 ADD_SUBDIRECTORY(N3)
+# end of the -ffp-contract=off scope (see note above EBTKS)
+SET(CMAKE_C_FLAGS   "${_MT_SAVED_C_FLAGS}")
+SET(CMAKE_CXX_FLAGS "${_MT_SAVED_CXX_FLAGS}")
 
 ADD_SUBDIRECTORY(glim_image)
 ADD_SUBDIRECTORY(mni_autoreg)

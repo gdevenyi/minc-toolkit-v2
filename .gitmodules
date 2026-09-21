@@ -57,7 +57,7 @@
 	url = https://github.com/BIC-MNI/BEaST.git
 [submodule "libminc"]
 	path = libminc
-	url = https://github.com/BIC-MNI/libminc.git
+	url = https://github.com/gdevenyi/libminc.git
 [submodule "minctools"]
 	path = minctools
 	url = https://github.com/BIC-MNI/minc-tools.git

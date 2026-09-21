@@ -94,6 +94,9 @@ jobs:
           set -euxo pipefail
           cd build
           ctest --output-on-failure -j"$(nproc)"
+      - name: "THROWAWAY: build a project against the installed LIBMINC::nifti"
+        if: ${{ !cancelled() }}
+        run: bash .github/scripts/ci-libminc-nifti-consumer.sh build
 
   fedora:
     runs-on: ubuntu-latest
@@ -168,6 +171,9 @@ jobs:
           set -euxo pipefail
           cd build
           ctest --output-on-failure -j"$(nproc)"
+      - name: "THROWAWAY: build a project against the installed LIBMINC::nifti"
+        if: ${{ !cancelled() }}
+        run: bash .github/scripts/ci-libminc-nifti-consumer.sh build
 
   macos:
     runs-on: macos-latest
@@ -219,6 +225,9 @@ jobs:
           set -euxo pipefail
           cd build
           ctest --output-on-failure -j"$(sysctl -n hw.ncpu)"
+      - name: "THROWAWAY: build a project against the installed LIBMINC::nifti"
+        if: ${{ !cancelled() }}
+        run: bash .github/scripts/ci-libminc-nifti-consumer.sh build
 
   # Everything vendored, everything built. Passing no USE_SYSTEM_* flags leaves
   # them all at their OFF default, so the superbuild compiles zlib, HDF5, netCDF,
@@ -302,6 +311,9 @@ jobs:
           set -euxo pipefail
           cd build
           ctest --output-on-failure -j"$(nproc)"
+      - name: "THROWAWAY: build a project against the installed LIBMINC::nifti"
+        if: ${{ !cancelled() }}
+        run: bash .github/scripts/ci-libminc-nifti-consumer.sh build
       - name: Build tarball
         run: |
           set -euxo pipefail

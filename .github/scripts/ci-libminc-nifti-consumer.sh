@@ -27,6 +27,10 @@ project(libminc_nifti_consumer C)
 find_package(LIBMINC CONFIG REQUIRED)
 add_executable(m m.c)
 target_link_libraries(m PRIVATE LIBMINC::minc2)
+# LIBMINC::minc2 does not carry a system HDF5 include dir (Debian keeps
+# hdf5.h in /usr/include/hdf5/serial); the legacy variable does. Known
+# gap, separate from the NIfTI work.
+target_include_directories(m PRIVATE ${LIBMINC_INCLUDE_DIRS})
 add_executable(n n.c)
 target_link_libraries(n PRIVATE LIBMINC::nifti)
 EOF
